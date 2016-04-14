@@ -1,0 +1,332 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beamer Presentation
+% LaTeX Template
+% Version 1.0 (10/11/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND THEMES
+%----------------------------------------------------------------------------------------
+
+\documentclass{beamer}
+
+\mode<presentation> {
+
+% The Beamer class comes with a number of default slide themes
+% which change the colors and layouts of slides. Below this is a list
+% of all the themes, uncomment each in turn to see what they look like.
+
+%\usetheme{default}
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{Dresden}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+%\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+%\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+% As well as themes, the Beamer class has a number of color themes
+% for any slide theme. Uncomment each of these in turn to see how it
+% changes the colors of your current slide theme.
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+\usecolortheme{lily}
+%\usecolortheme{orchid}
+%\usecolortheme{rose}
+%\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+%\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+
+%\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+}
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage[T1]{fontenc}
+\usepackage{bm}
+\usepackage{extarrows}
+\usepackage{fancyvrb}
+\usepackage{tikz}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{indentfirst}
+\usepackage{array}
+\usetikzlibrary{positioning}
+%\usepackage {xcolor}
+\definecolor {processblue}{cmyk}{0.96,0,0,0}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title[]{Controlling the False Discover Rate Via Knockoffs} % The short title appears at the bottom of every slide, the full title is only on the title page
+
+\author{Peiran Liu} % Your name
+\institute[] % Your institution as it will appear on the bottom of every slide, may be shorthand to save space
+{
+By Rina Foygel Barber and Emmanuel J. Cand\`{e}s \\
+University of Chicago and Stanford University \\ % Your institution for the title page
+\medskip
+%\textit{} % Your email address
+}
+\date{\today} % Date, can be changed to a custom date
+
+\begin{document}
+
+\begin{frame}
+\titlepage % Print the title page as the first slide
+\end{frame}
+
+\begin{frame}
+\frametitle{Overview} % Table of contents slide, comment this block out to remove it
+\tableofcontents % Throughout your presentation, if you choose to use \section{} and \subsection{} commands, these will automatically be printed on this slide as an overview of your presentation
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+%	PRESENTATION SLIDES
+%----------------------------------------------------------------------------------------
+
+%------------------------------------------------
+\section{Problem and Intuition} % Sections can be created in order to organize your presentation into discrete blocks, all sections and subsections are automatically printed in the table of contents as an overview of the talk
+%------------------------------------------------
+\begin{frame}
+\frametitle{False Discover Rate}
+\begin{itemize}
+\item Model: Classical Linear Regression Model:
+\begin{align*}
+& Y = \bm{X}\bm{\beta} + \bm{z}
+\end{align*}
+
+$\bm{X}\in \mathbb{R}^{n\times p}, \bm{\beta} \in \mathbb{R}^n$, $\bm{z} \sim N(0, \sigma^2\bm{I})$
+\item $\#\{j: \bm{\beta}_j \neq 0 \}$ is sparse. 
+\item Goal: Find decision rule:
+\begin{align*}
+& d: Y \rightarrow \hat S\in \{1,2,\dots, p\}
+\end{align*}
+
+With loss function $L(d) = \text{FDR} = \mathbb{E}\left[\frac{\#\{j:\beta_j =0 \text{ and }j\in \hat{S} \} }{\#\{j:j\in S\}\vee 1 } \right]$.
+
+\item False Discover Rate (FDR): Expected proportion of falsely selected variables, a false discovery being a selected variable not appearing in the true model.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Lasso Recall:}
+Consider Lasso Model, an $l-1$ penalized regression, given by:
+\begin{align*}
+& \hat{\beta}(\lambda) = \arg\min_{\textbf{b}} \left\{\frac{1}{2}\|\bm{y}- \bm{X}\bm{b}\|_2^2 + \lambda\|\bm{b}\|_1 \right\}
+\end{align*}
+
+Coefficient paths of Lasso should have following properties:
+\begin{itemize}
+\item When $\lambda = 0$, $\hat{\beta}(0)$ is the LS result, which implies that $\hat{\beta}(0)_j\neq 0$ with prob 1.
+\item When $\lambda$ is sufficiently large, $\hat{\beta}(\lambda) = 0$.
+\item $\hat{\beta}_j(\lambda)$ goes to 0 as $\lambda$ move from $0$ to $\infty$. 
+\end{itemize}
+
+Test statistics for feature $j = \sup\{\lambda: \hat{\beta}_j(\lambda) =0 \}$.
+\end{frame}
+
+\begin{frame}
+\frametitle{Lasso Based Variable Selection:}
+Based on properties of Lasso regression, we can develop a natural variable selection rule as follows:
+\begin{enumerate}
+\item Set a threshold of $\lambda_0$.
+\item $\hat S = \{j: \hat{\beta}_j(\lambda_0)\neq 0 \}$
+\end{enumerate}
+
+Problem: 
+
+How should we set this threshold to get low False Discover Rate:
+
+$\text{FDR} = \mathbb{E}\left[\frac{\#\{j:\beta_j =0 \text{ and }j\in \hat{S} \} }{\#\{j:j\in S\}\vee 1 } \right]$
+
+Remark:
+\begin{itemize}
+\item What we care most is trying not to select feature $j$ in $\hat S$ if $\beta_j = 0$.
+\item In practice, we want to control FDR and choose more correct features in the model.
+\end{itemize}
+\end{frame}
+
+%----------------------------------------
+\section{Knockoff Method }
+
+\begin{frame}
+\frametitle{Knockoffs}
+Step 1: Construct Knockoffs:
+
+For each feature $\bm{X}_j$ in the model, construct a "knockoff" feature $\tilde{X}_j$. 
+
+Goal of the knockoff variables: imitate the correlation structure of the original features in a very specific way that will allow for FDR control.
+
+Characteristics of knockoff variables: 
+\begin{align*}
+& \Sigma_{jj} = \|X_j\|_2^2 = 1 \quad \text{Normalized }X.\\
+& \tilde{X}^T\tilde{X}=\Sigma = X^TX \\
+& X^T\tilde{X} = \Sigma - \text{diag}(s), \text{diag}(s) \succeq 0 \\
+& \text{diag}(s) \preceq 2\Sigma
+\end{align*}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Knockoffs}
+Properties:
+\begin{itemize}
+	\item Knockoff variables have the same correlation structure with original variables.
+	\item We should try to maximize $s_i$, which can make $X_j$ and $\tilde{X}_j$ to be as much orthogonal as possible.
+\end{itemize}
+Construction of $\tilde{X}$,
+\begin{align*}
+& \tilde{X} = X(I - \Sigma^{-1} \text{diag}(s))+\tilde{U}C\\
+& \tilde{U} \text{ is an }n\times p\text{ orthogonal of span of }X.\\
+& C^TC = 2\text{diag}(s)-\text{diag}(s)\Sigma^{-1}\text{diag}(s)
+\end{align*}
+\end{frame}
+
+\begin{frame}
+\frametitle{Knockoffs}
+Step 2: Consider Lasso problem:
+\begin{align*}
+& \hat{\beta}(\lambda) = \arg\min_{\textbf{b}} \left\{\frac{1}{2}\|\bm{y}- [\bm{X}, \tilde{\bm{X}}]\bm{b}\|_2^2 + \lambda\|\bm{b}\|_1 \right\}\\
+\text{Define }& Z_j = \sup\{\lambda: \hat{\beta}_j(\lambda) \neq 0 \} \\
+& \tilde{Z}_j = \sup\{\lambda: \hat{\beta}_{j+p}(\lambda) \neq 0 \} \\
+& W_j = Z_j \vee \tilde{Z}_j \cdot\left\{\begin{aligned}
+& +1 && \quad Z_j > \tilde{Z}_j \\ & -1 && \quad Z_j < \tilde{Z}_j
+\end{aligned} \right.
+\end{align*}
+
+Then we can use $W_j$ as our test statistic for decision. 
+\end{frame}
+
+\begin{frame}
+\frametitle{Knockoffs}
+Step 3: Let q be the target FDR, define a data-dependent threshold T as:
+\begin{align*}
+& T = \min\left\{t\in \mathcal{W}: \frac{\#\{j: W_j\leq-t\} }{\# \{j: W_j\geq t\}\vee 1 }\leq q \right\} \\
+& \mathcal{W} = \{|W_j|; j=1,\dots. p \}\backslash \{0\}
+\end{align*}
+
+Intuition: 
+\begin{itemize}
+\item $\beta_j =0$ implies that $W_j$ is symmetric around 0, $|W_j|$ should also tend to get smaller.
+\item Large positive $W_j$ implies $\beta_j\neq 0$. 
+\item If for some feature $j$, its knockoff is selected earlier than the original one, $\beta_j$ tends to be null.
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Summary of Knockoffs}
+\begin{itemize}
+	\item \textbf{Knockoff Procedure:}
+	
+	Construct knockoff $\tilde{X}$ and calculate statistics $W_j$. Then select $\hat{S} = \{j: W_j\geq T\}$ for the threshold $T$ calculated as before.
+	\item \textbf{Knockoff+ Procedure:}
+	
+	Construct knockoff $\tilde{X}$ and calculate statistics $W_j$. Then select $\hat{S} = \{j: W_j\geq T_1\}$. Here threshold $T$ should be:
+	\begin{align*}
+	& T = \min\left\{t\in \mathcal{W}: \frac{1 +\#\{j: W_j\leq-t\} }{\# \{j: W_j\geq t\}\vee 1 }\leq q \right\}
+	\end{align*}
+\end{itemize}
+
+Why we have two different set up of $T$?
+\end{frame}
+
+\section{Theory}
+\begin{frame}
+\frametitle{Main Results}
+\begin{itemize}
+	\item \textbf{Theorem 1}
+	
+	For any $q\in [0,1]$, the original Knockoff method satisfies:
+	\begin{align*}
+	& \mathbb{E}\left[\frac{\#\{j: \beta_j=0\text{ and }j\in\hat{S} \} }{\#\{j: j\in\hat{S} \} + q^{-1}} \right]\leq q
+	\end{align*}
+	
+	where the expectation is taken over the Gaussian noise $\bm{z}$ in the linear model, and $X$, $\tilde{X}$ is treated as fixed.
+	\item \textbf{Theorem 2}
+	
+	For any $q\in [0,1]$, the original Knockoff+ method satisfies:
+	\begin{align*}
+	& \mathbb{E}\left[\frac{\#\{j: \beta_j=0\text{ and }j\in\hat{S} \} }{\#\{j: j\in\hat{S} \}} \right]\leq q
+	\end{align*}
+	
+	where the expectation is taken over the Gaussian noise $\bm{z}$ in the linear model, and $X$, $\tilde{X}$ is treated as fixed.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Some Details: Choice of s}
+\begin{itemize}
+\item Recall this $\bm{s}$ is used to compute the knockoff.
+\item Ideally, we want to "maximize" s in some sense, which make the knockoff variables as much orthogonal to the original one as we can.
+\item One choice: $s_j = 2\lambda_{\min}(\Sigma)\wedge 1$.
+\item Another choice: SDP (Semi-Definite Programming) knockoffs:
+\begin{align*}
+& \text{Minimize }\sum_j (1-s_j) \text{ subject to }0\leq s_j\leq 1, \text{diag}\{s\} \preceq 2\Sigma
+\end{align*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Some Details: Property of W statistics}
+\begin{itemize}
+	\item $W = f([X,\tilde{X}]^T[X,\tilde{X}], [X,\tilde{X}]^Ty)$. That is to say, W statistic only depends on gram matrix and feature-response inner product.
+	\item Swapping $X_j$ and $\tilde{X}_j$, the sign of $W_j$ will change and the rest $W_i$ ($i\neq j$) will not change.
+	\item For $\beta_j = 0$, $W_j \overset{d}{=} -W_j$
+\end{itemize}
+\end{frame}
+
+\section{Summary}
+\begin{frame}
+\frametitle{Summary}
+\begin{itemize}
+\item This paper proposed knockoffs rules for controlling False Discover Rate.
+\item To solve this problem, this paper constructs knockoff variables, trying to imitate the structure of the original ones but also to make them as orthogonal as possible.
+\item Combine Lasso variable selection together with knockoff variables.
+\item Intuition tells us for null features, original and knockoff variables tend to appear in the model symmetrically, but for non-null features, original features tend to be selected earlier.
+\item Create statistic based on this intuition, and adjust parameters, in order to reach the level we want for FDR.
+\end{itemize}	
+\end{frame}
+\end{document} 
