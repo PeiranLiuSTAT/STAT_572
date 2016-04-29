@@ -1,0 +1,182 @@
+\documentclass{uwstat572}
+
+%%\setlength{\oddsidemargin}{0.25in}
+%%\setlength{\textwidth}{6in}
+%%\setlength{\topmargin}{0.5in}
+%%\setlength{\textheight}{9in}
+
+\usepackage{amsmath,amssymb}
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage[T1]{fontenc}
+\usepackage{bm}
+\usepackage{extarrows}
+\usepackage{fancyvrb}
+\usepackage{tikz}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{indentfirst}
+\usepackage{color}
+\usepackage{setspace}
+
+\renewcommand{\baselinestretch}{1.5} 
+\newcommand{\specialcell}[2][c]{%
+	\begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+\newcommand\diag{\text{diag}}
+\bibliographystyle{plainnat}
+
+\begin{document}
+%%\maketitle
+
+\begin{center}
+  {\LARGE Controlling False Discover Rate via Knockoffs}\\\ \\
+  {Peiran Liu \\ 
+    Department of Statistics, University of Washington Seattle, WA, 98195, USA
+  }
+\end{center}
+
+
+
+\begin{abstract}
+  Put your project summary here.
+\end{abstract}
+
+\section{Introduction}
+For multiple inferences, or variable selection problems, researchers tend to select the (statistically) significant ones as important features for discussion, analysis and form of conclusions. However, unguarded use of single inference (or single variable selection) results in a greatly amplified false discover rate (or, type I error in multiple test problem). Thus, this paper, written by Rina Foygel Barber and Emmanuel J. Candes, is about this problem and focuses on the accuracy of variable selections under the control of type I error, which is theoretically equivalent to the false discover rate.
+
+\subsection{Original False Discover Rate Definition}
+Originally, false discover rate is defined in multiple test problems (\cite{benjamini1995controlling}). Consider a problem of testing simultaneously m null hypothesis, of which $m_0$ are true. For any procedures of solving these multiple test problems, four cases will happen, including true null hypothesis are either rejected or not rejected, and the same for non-true nulls. Thus, if we write a table, they can be written as follows:
+\begin{table}[!htb]
+	\centering
+	\caption{Summary of Errors in Multiple Testing}
+	\label{my-label}
+	\begin{tabular}{lccc}
+		& \specialcell{Declared\\ non-significant} & \specialcell{Declared\\ significant} & Total \\ \hline
+		True Null Hypothesis	& U & V & $m_0$ \\
+		Non-True null Hypothesis	& T & S & $m-m_0$ \\
+		& $m-R$ & R & m
+	\end{tabular}
+\end{table}
+
+Then, the definition of False Discover Rate is the proportion of rejected true nulls among all rejected hypothesis, which is a random variable $\bm{Q} = \bm{V}/(\bm{V}+\bm{S})$. Naturally, if no hypothesis is rejected, then we can define $\bm{Q} = 0$.
+
+Since the data are considered to be random, and the testing procedure should depend on the data, the result of testing, including the proportion of rejected nulls which are erroneously rejected, is a random variable. Thus, the formal definition of False Discover Rate is the expectation of this random variable $\bm{Q}$, that is:
+
+\noindent{\sc Definition: }{\bf (False Discover Rate)}
+
+Consider a problem of testing simultaneously m null hypothesis, of which $m_0$ are true. The false discover rate of any testing procedure is:
+\begin{align}
+& \text{FDR} = \mathbb{E}(\bm{Q}) = \mathbb{E}(\bm{V}/(\bm{V}+\bm{S}))
+\end{align}
+
+\subsection{False Discover Rate in Variable Selection}
+In this paper, we assume that our observations obey the classical linear regression model
+\begin{align}
+& \bm{y} = \bm{X}\bm{\beta}+\bm{z}
+\end{align}
+
+where as usual, variables $\bm{y}\in\mathbb{R}^n$ is a vector of responses, $\bm{X}\in \mathbb{R}^{n\times p}$ is a known design matrix, and $\bm{\beta}\in \mathbb{R}^p$ is the unknown vector of coefficients and $\bm{z}\sim \mathcal{N}(\bm{0}, \sigma^2\bm{I})$ is Gaussian noise. In this paper, authors restrict their attention to the case where $n\geq p$ as otherwise the model would not even be identifiable, which is low dimension setting and the high dimensional settings are still under development.
+
+In practice, it's often the case that the size of true support of parameters $\bm{\beta}$ is small, that is, only a few features in $\bm{X}$ are expected to be associated with the outcome $y$ of interest. In terms of the linear model, this means that $|\{j; \beta_j \neq 0 \}|$ is small. In practice, we want to control the proportion of incorrectly selected features into our model. Thus, in this paper, the author borrowed the idea from multiple test problems, and proposed a method controlling false discover rate (FDR) among all selected variables.
+
+For the definition of false discover rate, we can define it as follows:
+
+\clearpage
+\noindent{\sc Definition: }{\bf (False Discover Rate in Variable Selection)}
+
+Consider the variable selection procedure returns a subset $\hat{S} \subset \{1,2,\dots, p \}$, where the true parameter is $\bm{\beta}$, then the false discover rate is:
+\begin{align}
+& \text{FDR} = \mathbb{E}\left[\frac{\#\{j:\beta_j = 0 \text{ and }j\in \hat{S} \} }{\#\{j: j\in \hat{S}\} \vee 1 } \right]
+\end{align}
+
+which is expected proportion of falsely selected variables. 
+
+To match this definition to the original one in multiple testings, consider we are interested in p hypothesis $H_j: \bm{\beta}_j = 0$, and rejecting hypotheses $H_j$ is statistically equivalent to selecting variable (feature) j. Then, we can figure out that two definitions are matched to each other.
+
+\subsection{The Knockoff Filter}
+This paper proposed a general FDR controlling procedure that is guaranteed to work under any fixed design $\bm{X} \in \mathbb{R}^{n\times p}$ as long as $n>p$ and $\bm{y}$ is linear Gaussian response. This method can be separated into three steps:
+
+\subsubsection{Construct Knockoffs}
+For each feature $\bm{X}_j$ in the model, which is the $j$th column of $\bm{X}$, we construct a "knockoff" feature $\bm{\tilde X}_j$, which can imitate the correlation structure of the original features in a very specific way. They are defined as follows:
+
+For knockoff features $\tilde {\bm{X}}$, we ensure that 
+\begin{align}
+& \tilde {\bm{X}}^T\tilde {\bm{X}} = \bm{X}^T\bm{X} = \bm{\Sigma} & \tilde {\bm{X}}^T\bm{X} = \bm{\Sigma} - \text{diag}{(\bm{s})}
+\end{align}
+
+where $\bm{s}$ is a p-dimensional non-negative vector. Thus, through this construction, we can have three properties of this knockoff features. The first is the knockoff features $\bm{\tilde{X}}$ has the same correlation structure of original features. What's more, the correlation between distinct original and knockoff features are the same as those between originals because $\bm{X}_j^T\tilde{\bm{X}}_k = \bm{X}_j^T\bm{X}_k$ for all $j\neq k$. However, if we comparing a feature $\bm{X}_j$ and its knockoff $\bm{\tilde X}_j$, the correlation is then:
+\begin{align*}
+& \bm{X}_j^T\tilde{\bm{X}}_j = \bm{\Sigma}_jj - s_j = 1-s_j
+\end{align*}
+
+when $\bm{X}$ is normalized. If we choose relatively large $s_j$s, the knockoff features will be different to its original, which will offer a good reference for our variable selection process. 
+
+The construction of $\bm{\tilde X}$ can be done automatically by choose $\bm{s}\in\mathbb{R}_+^p$ satisfying $\diag\{\bm{s} \}\preceq 2\Sigma$, (which is a feasible convex optimization problem, \cite{boyd2004convex}, $\tilde{X}$ can be constructed as follows:
+\begin{align}\label{eq:5}
+& \tilde{\bm{X}} = \bm{X}(\bm{I}- \bm{\Sigma}^{-1}\text{diag}\{\bm{s} \}) + \bm{\tilde U}C 
+\end{align}
+
+where $\tilde{\bm{U}}$ is orthonormal $n\times p$ matrix to $\bm{X}$, and $\bm{C}$ is a Cholesky decomposition of $2\diag\{\bm{s}\} - \diag\{\bm{s}\} \Sigma^{-1} \diag\{\bm{s}\}$.
+
+\subsubsection{Calculate Statistics for Each Pair of Variables via Lasso}
+Lasso (\cite{tibshirani1996regression}) is a well-known variable selection methods in linear regressions, which is known to be asymptotically accurate for both variable selection and coefficient estimation. From the variable selection perspective, we consider the Lasso model and the corresponding test statistics to be as follows:
+\begin{align}\label{model:6}
+& \hat{\bm{\beta}}(\lambda) = \arg\min_b \left\{\frac{1}{2}\|\bm{y} - \bm{X}\bm{b} \|_2^2 + \lambda\|\bm{b}\|_1 \right\}
+\end{align}
+
+Correspondingly, the test statistics for feature j is then:
+\begin{align}
+& Z_j = \sup\{\lambda; \hat{\bm{\beta}}_j(\lambda)=0 \}
+\end{align}
+
+which is likely to be small for null features but large for signals.
+However, to quantify this and choose an appropriate threshold for variable selection, we need to use the knockoff variables to calibrate our threshold. Thus, if we replace $\bm{X}$ by $[\bm{X} \bm{\tilde{X}}]$ in (\ref{model:6}), we can get paired statistics $(Z_j, \tilde{Z}_j)$ as references. Thus, we can use the following statistics:
+\begin{align}\label{eq:8}
+& \bm{W}_j = Z_j\vee \tilde{Z}_j \cdot \left\{\begin{aligned}
+& +1, & 	Z_j > \tilde{Z}_j\\ & -1, & 	Z_j < \tilde{Z}_j\\ 
+\end{aligned} \right.
+\end{align}
+
+Then a large $W_j$ implies $X_j$ enters into the model early and does so before its knockoff, which is an evidence of non-null feature.
+
+\subsubsection{Calculate Data-dependent Threshold for Computed Statistics}
+Let $q$ be the target FDR, we can define data-dependent threshold T as 
+\begin{align}\label{eq:9}
+T  = \min\{t\in\mathcal{W}: \frac{\#\{j, W_j\leq -t\}}{\#\{j, W_j\geq t\}\vee 1}\leq q \}
+\end{align}
+
+or $T=+\infty$ if this set is empty, where $\mathcal{W} = \{|W_j|;j=1,\dots,p \}$. Then, we can define the procedure of Knockoff variable selection as follows:
+
+{\sc Definition: }(Knockoff). For any design matrix $\bm{X}\in\mathbb{R}^{n\times p}$ and response $\bm{y}\in \mathbb{R}^n$, 
+\begin{enumerate}
+	\item Create knockoff features $\bm{\tilde X}$ via (\ref{eq:5});
+	\item Compute Statistics $W_j$ for all features via (\ref{eq:8});
+	\item Compute threshold $T$ with the target FDR q via (\ref{eq:9});
+	\item Select features 
+	\begin{align}\label{eq:10}
+	& \hat{S} =\{j: W_j\geq T\}
+	\end{align}
+\end{enumerate}
+
+With proper theoretical derivations, this procedure can control a quantity nearly equal to the FDR, and we can make changes to (\ref{eq:9}) to let this procedure controlling FDR itself.
+
+
+\section{Methods}
+
+\section{Results}
+
+\section{Discussion}
+
+\bibliography{stat572}
+
+\end{document}
+
+
+
+
+
+
+
+
+
