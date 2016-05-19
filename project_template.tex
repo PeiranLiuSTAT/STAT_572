@@ -26,6 +26,13 @@
 \newcommand\diag{\text{diag}}
 \bibliographystyle{plainnat}
 
+
+\usepackage{color}
+\usepackage{ulem}
+\newcommand{\vmdel}[1]{\sout{#1}}
+\newcommand{\vmadd}[1]{\textbf{\color{red}{#1}}}
+\newcommand{\vmcomment}[1]{({\color{blue}{VM's comment:}} \textbf{\color{blue}{#1}})}
+
 \begin{document}
 %%\maketitle
 
@@ -43,10 +50,15 @@
 \end{abstract}
 
 \section{Introduction}
-For multiple inferences, or variable selection problems, researchers tend to select the (statistically) significant ones as important features for discussion, analysis and form of conclusions. However, unguarded use of single inference (or single variable selection) results in a greatly amplified false discover rate (or, type I error in multiple test problem). Thus, this paper, written by Rina Foygel Barber and Emmanuel J. Candes, is about this problem and focuses on the accuracy of variable selections under the control of type I error, which is theoretically equivalent to the false discover rate.
+For multiple inferences, or variable selection problems, researchers tend to select the (statistically) significant ones as important features for discussion, analysis and form of conclusions. 
+However, unguarded use of single inference (or single variable selection) results in a greatly amplified false discover rate (or, type I error in multiple test problem). Thus, this paper, written by Rina Foygel Barber and Emmanuel J. Candes, is about this problem and focuses on the accuracy of variable selections under the control of type I error, which is theoretically equivalent to the false discover rate.
+\vmcomment{The above paragraph has lots of undefined terms. Start from the very beginning and explain what you mean by multiple inferences; define variable selection. Keep in mind that introduction should use as few formulae as possible}.
 
 \subsection{Original False Discover Rate Definition}
-Originally, false discover rate is defined in multiple test problems (\cite{benjamini1995controlling}). Consider a problem of testing simultaneously m null hypothesis, of which $m_0$ are true. For any procedures of solving these multiple test problems, four cases will happen, including true null hypothesis are either rejected or not rejected, and the same for non-true nulls. Thus, if we write a table, they can be written as follows:
+Originally, false discover rate is defined in multiple test\vmadd{ing} problems (\cite{benjamini1995controlling}). 
+Consider a problem of testing simultaneously $m$ null hypothesis, of which $m_0$ are true. 
+For any procedures of solving these multiple test problems, four cases will happen, including true null hypothesis are either rejected or not rejected, and the same for non-true nulls. 
+Thus, if we write a table, they can be written as follows: \vmcomment{Refer to the table by its label/reference}. 
 \begin{table}[!htb]
 	\centering
 	\caption{Summary of Errors in Multiple Testing}
@@ -58,7 +70,6 @@ Originally, false discover rate is defined in multiple test problems (\cite{benj
 		& $m-R$ & R & m
 	\end{tabular}
 \end{table}
-
 Then, the definition of False Discover Rate is the proportion of rejected true nulls among all rejected hypothesis, which is a random variable $\bm{Q} = \bm{V}/(\bm{V}+\bm{S})$. Naturally, if no hypothesis is rejected, then we can define $\bm{Q} = 0$.
 
 Since the data are considered to be random, and the testing procedure should depend on the data, the result of testing, including the proportion of rejected nulls which are erroneously rejected, is a random variable. Thus, the formal definition of False Discover Rate is the expectation of this random variable $\bm{Q}$, that is:
@@ -69,6 +80,8 @@ Consider a problem of testing simultaneously m null hypothesis, of which $m_0$ a
 \begin{align}
 & \text{FDR} = \mathbb{E}(\bm{Q}) = \mathbb{E}(\bm{V}/(\bm{V}+\bm{S}))
 \end{align}
+
+\vmcomment{Most of what you've written is Methods. Intro should be a non-mathematical introduction and literature review; description of paper's contributions.}
 
 \subsection{False Discover Rate in Variable Selection}
 In this paper, we assume that our observations obey the classical linear regression model
