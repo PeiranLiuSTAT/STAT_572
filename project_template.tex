@@ -1,0 +1,441 @@
+\documentclass{uwstat572}
+
+%%\setlength{\oddsidemargin}{0.25in}
+%%\setlength{\textwidth}{6in}
+%%\setlength{\topmargin}{0.5in}
+%%\setlength{\textheight}{9in}
+
+\usepackage{amsmath,amssymb}
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage[T1]{fontenc}
+\usepackage{bm}
+\usepackage{extarrows}
+\usepackage{fancyvrb}
+\usepackage{tikz}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{indentfirst}
+\usepackage{color}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{pdfrender}
+\pdfrender{StrokeColor=black,LineWidth=0.3pt}
+
+
+\renewcommand{\baselinestretch}{1.5} 
+\newcommand{\specialcell}[2][c]{%
+	\begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+\newcommand\diag{\text{diag}}
+\bibliographystyle{plainnat}
+
+\begin{document}
+%%\maketitle
+
+\begin{center}
+  {\LARGE Controlling False Discovery Rate via Knockoffs}\\\ \\
+  {Peiran Liu \\ 
+    Department of Statistics, University of Washington Seattle, WA, 98195, USA
+  }
+\end{center}
+
+
+
+\begin{abstract}
+  Put your project summary here.
+\end{abstract}
+
+\section{Introduction}
+Hypothesis Testing is of great interest to statisticians, and testing simultaneously a family of hypotheses is essential in many areas, including variable selection, multiple comparisons, etc. However, unguarded use of single testing procedure, such as one dimensional t test, will result in a greatly amplified type I error. In practice, rarely we are interested only in whether all hypotheses are jointly true or not, which is testing with combination of all null hypotheses as the joint null hypothesis. For most applications, we perform inference about single hypotheses, and wish to decide which ones can be rejected, and which can be called discoveries. 
+
+Traditionally, in such multiple hypotheses testing problems, we are interested in controlling the probability of erroneously rejecting the null hypotheses. In the most conservative scenario, scientists are interested in controlling the probability of erroneously rejecting even one of the true null hypotheses, which is defined as familywise error-rate (FWE). This criterion was widely used, with methodology development contributions from \cite{hochberg2009multiple} and \cite{westfall1993resampling} to name a few. Controlling FWE requires each individual tests to be conducted at lower size of tests, such as Bonferroni procedures in \cite{holm1979simple}. 
+
+However, with controlling FWE, the power of detecting true features will be greatly reduced as the number of hypotheses in the family increases, even when more powerful FWE controlling procedures are applied. To overcome , instead of considering controlling FWE as the criterion, scientists are more interested in controlling the proportion of erroneous rejections among all rejections, which brings us to the notion of False Discovery Rate.
+
+\subsection{False Discovery Rate}
+False Discovery Rate, suggested by \cite{benjamini1995controlling}, is a different point of view of how to look at those erroneous rejections. Instead of controlling the probability of erroneously rejecting even one hypothesis, Benjamini and Hochberg control proportion of erroneous rejections among all rejections, which is the definition of False Discovery Rate. 
+
+In the case where all hypotheses are true, controlling the FDR is equivalent to controlling the FWE, since when all hypotheses are true, any rejection will be erroneous rejection, which means that False Discovery Rate is 1 when there is any rejection and 0 when there is not. However, when the number of true null hypotheses is less than all hypotheses, controlling the FDR will not also controls FWE. 
+
+To explain the definition of FDR clearer, assume we have $m$ different hypotheses to test, of which $m_0$ are true. For a multiple testing procedure, suppose we record the result in \textbf{Table }\ref{Tbl:1}:
+\begin{table}[!htb]\label{Tbl:1}
+	\centering
+	\caption{Summary of Errors in Multiple Testing}
+	\label{my-label}
+	\begin{tabular}{l|ccc}
+		& \specialcell{Declared\\ non-significant} & \specialcell{Declared\\ significant} & Total \\ \hline
+		True Null Hypotheses	& U & V & $m_0$ \\
+		Non-True null Hypotheses	& T & S & $m-m_0$ \\
+		& $m-R$ & R & m
+	\end{tabular}
+\end{table}
+
+Then, the definition of False Discover Rate is the proportion of rejected true nulls among all rejected hypothesis, which is a random variable $Q = V/(V+S)$. Naturally, if no hypothesis is rejected, then we can define $Q = 0$.
+
+\subsection{False Discovery Rate Controlling in Variable Selection}
+Similar to the ideas in multiple testing problems discussed in previous sections, \cite{barber2015controlling} defines the false discovery rate in variable selection problems, which is selecting features in regression models. Specifically, consider the linear regression model (\ref{eq:1})
+\begin{align}\label{eq:1}
+& \bm{y} = \bm{X}\bm{\beta}+\bm{z},
+\end{align}
+
+where as usual, $\bm{y}\in\mathbb{R}^n$ is a vector of responses, $\bm{X}\in \mathbb{R}^{n\times p}$ is a known design matrix, $\bm{\beta}\in \mathbb{R}^p$ is the unknown vector of coefficients, and $\bm{z}\sim \mathcal{N}(\bm{0}, \sigma^2\bm{I})$ is Gaussian noise. In this paper, the authors restrict their attention to the case where $n\geq p$ as otherwise the model would not even be identifiable.
+
+In practice, it's often the case that the size of true support of parameters $\bm{\beta}$ is small, that is, only a few features in $\bm{X}$ are expected to be associated with the outcome $y$ of interest. In terms of the linear model, this means that $|\{j; \beta_j \neq 0 \}|$ is small. The variable selection problem amounts to developing a procedure to choose $S\subset\{1,\dots, p\}$, such that most true features, whose $\beta_j$ is non-zero, are selected, and most null features are not selected in set $S$. In practice, we want to control the proportion of incorrectly selected features into our model. Similarly, we define the false discovery rate in variable selection as the proportion of erroneously selected features among all selected features.
+
+If we consider a multiple testing problem with $p$ hypotheses $H_j: \bm{\beta}_j = 0$, where $j=1,2,\dots,p$, then rejecting hypotheses $H_j$ is statistically equivalent to selecting variable (feature) j. This makes the false discovery rate defined in variable selection problem equivalent to that in multiple testing problem. 
+
+\subsection{The Knockoff Filter}
+For controlling False Discovery Rate in the variable selection problem, \cite{barber2015controlling} proposed a general FDR controlling procedure via knockoff variables. To summarize the ideas in this paper, they construct knockoff variables, which formed to imitate the correlation structure of the original features. On the other hand, the original features should not be so similar to its knockoff features, which will make its knockoff works better as a standard in the next variable selection procedure, such as Lasso \cite{tibshirani1996regression} applied in this paper.
+
+The method proposed by \cite{barber2015controlling} is guaranteed to work under any fixed design $\bm{X} \in \mathbb{R}^{n\times p}$ as long as $n>p$ and $\bm{y}$ is a linear function of covariates with added Gaussian response. When these assumptions are satisfied, the procedure suggested by \cite{barber2015controlling} will theoretically control the false discovery rate with certain levels. Moreover, the power of the knockoff filter out-performs the power of \cite{benjamini1995controlling}'s, and in \cite{benjamini2001control}'s in simulation studies.
+
+\section{Methods}
+\subsection{Constructing Knockoffs}
+For each feature $\bm{X}_j$ in the model, which is the $j$th column of $\bm{X}$, we construct a "knockoff" feature $\bm{\tilde X}_j$, such that 
+\begin{align*}
+& \tilde {\bm{X}}^T\tilde {\bm{X}} = \bm{X}^T\bm{X} = \bm{\Sigma}, \\
+& \tilde {\bm{X}}^T\bm{X} = \bm{\Sigma} - \text{diag}{(\bm{s})},
+\end{align*}
+
+where $\bm{s}$ is a $p$-dimensional non-negative vector. By this construction, we can have three properties of this knockoff features. The first is that the knockoff features $\bm{\tilde{X}}$ have the same correlation structure of the original features. Also, the correlation between distinct original and knockoff features is the same as the correlation between the corresponding distinct features because $\bm{X}_j^T\tilde{\bm{X}}_k = \bm{X}_j^T\bm{X}_k$ for all $j\neq k$. However, if we compare a feature $\bm{X}_j$ and its knockoff $\bm{\tilde X}_j$, the correlation is then:
+\begin{align*}
+& \bm{X}_j^T\tilde{\bm{X}}_j = \bm{\Sigma}_{jj} - s_j = 1-s_j,
+\end{align*}
+
+when $\bm{X}$ is normalized. If we choose relatively large $s_j$, the knockoff features will be not so similar to its original features. Then, when we compare test statistic of one original true feature and its knockoff variable, the test statistic of the knockoff variable will be similar to the statistics of the null features, which are expected to be different from true features. Thus, with this construction, the knockoff features can be a good reference in the variable selection process. 
+
+To choose the largest $s$ subject to the constraints $\diag\{\bm{s} \}\preceq 2\Sigma$ and $0\leq s_j\leq 1$, two different criterion can be applied. 
+\begin{itemize}
+\item {\it Equi-Correlated knockoffs:} If we assume the correlation between features and their knockoffs are equal, which means that all $s_j$ are equal, then we should choose $s_j$ in (\ref{eq:2.1})
+\begin{align}\label{eq:2.1}
+& s_j = 2\lambda_{\min}(\Sigma)\wedge 1
+\end{align}
+\item {\it SDP knockoffs:} Instead of assuming the correlation are equal, selecting $s$ so that the average correlation between features and their knockoffs is minimized is the second choice. This is done by solving the convex problem (\ref{eq:2.2}):
+\begin{align}\label{eq:2.2}
+&\begin{aligned}
+& \text{Minimize }\sum_j(1-s_j)\\
+&\text{Subject to }\quad 0\leq s_j\leq 1, \textbf{diag}(s) \preceq 2\Sigma
+\end{aligned}
+\end{align}
+\end{itemize}
+
+The construction of $\bm{\tilde X}$ can be done automatically by choose $\bm{s}\in\mathbb{R}_+^p$ satisfying $\diag\{\bm{s} \}\preceq 2\Sigma$, (which is a feasible convex optimization problem, \cite{boyd2004convex}, $\tilde{X}$ can be constructed as follows:
+\begin{align}\label{eq:4}
+& \tilde{\bm{X}} = \bm{X}(\bm{I}- \bm{\Sigma}^{-1}\text{diag}\{\bm{s} \}) + \bm{\tilde U}C 
+\end{align}
+
+where $\tilde{\bm{U}}$ is orthonormal $n\times p$ matrix to $\bm{X}$, and $\bm{C}$ is a Cholesky decomposition of $2\diag\{\bm{s}\} - \diag\{\bm{s}\} \Sigma^{-1} \diag\{\bm{s}\}$.
+
+\subsection{Calculate Statistics for Each Pair of Variables via Lasso}
+Lasso (\cite{tibshirani1996regression}) is a well-known variable selection methods in linear regressions, which is known to be asymptotically accurate for both variable selection and coefficient estimation. From the variable selection perspective, we consider the Lasso model (\ref{model:6})
+\begin{align}\label{model:6}
+& \hat{\bm{\beta}}(\lambda) = \arg\min_b \left\{\frac{1}{2}\|\bm{y} - \bm{X}\bm{b} \|_2^2 + \lambda\|\bm{b}\|_1 \right\}
+\end{align}
+
+Correspondingly, the test statistics for feature j is then:
+\begin{align}
+& Z_j = \sup\{\lambda; \hat{\bm{\beta}}_j(\lambda)=0 \}
+\end{align}
+
+which is likely to be small for null features but large for signals.
+However, to quantify this and choose an appropriate threshold for variable selection, we need to use the knockoff variables to calibrate our threshold. Thus, if we replace $\bm{X}$ by $[\bm{X} \bm{\tilde{X}}]$ in (\ref{model:6}), we can get paired statistics $(Z_j, \tilde{Z}_j)$ as references. Thus, we can use the following statistics:
+\begin{align}\label{eq:7}
+&{W}_j = Z_j\vee \tilde{Z}_j \cdot \left\{\begin{aligned}
+& +1, & 	Z_j > \tilde{Z}_j\\ & -1, & 	Z_j < \tilde{Z}_j\\ 
+\end{aligned} \right.
+\end{align}
+
+Then a large $W_j$ implies $X_j$ enters into the model early and does so before its knockoff, which is an evidence of non-null feature.
+
+\subsection{Calculate Data-dependent Threshold for Computed Statistics}
+Let $q$ be the target FDR, we can define data-dependent threshold T as 
+\begin{align}\label{eq:8}
+T  = \min\left\{t\in\mathcal{W}: \frac{\#\{j, W_j\leq -t\}}{\#\{j, W_j\geq t\}\vee 1}\leq q \right\}
+\end{align}
+
+or $T=+\infty$ if this set is empty, where $\mathcal{W} = \{|W_j|;j=1,\dots,p \}$. Then, we can define the procedure of Knockoff variable selection as follows:
+
+{\sc Definition 1. }(Knockoff). For any design matrix $\bm{X}\in\mathbb{R}^{n\times p}$ and response $\bm{y}\in \mathbb{R}^n$, 
+\begin{enumerate}
+	\item Create knockoff features $\bm{\tilde X}$ via (\ref{eq:4});
+	\item Compute Statistics $W_j$ for all features via (\ref{eq:7});
+	\item Compute threshold $T$ with the target FDR $q$ via (\ref{eq:8});
+	\item Select features $\hat{S} =\{j: W_j\geq T\}$.
+\end{enumerate}
+
+With the Knockoff procedure, we have the main result for Knockoff in this paper.
+
+{\sc Theorem 1. } {\it For any $q\in[0,1]$, the knockoff method satisfies }
+\begin{align*}
+& \mathbb{E}\left[\frac{\#\{j:\beta_j=0,\text{ and }j\in \hat{S} \}}{\#\{j:j\in \hat{S} \} + q^{-1}} \right]\leq q
+\end{align*}
+
+{\it where the expectation is taken over the Gaussian noise }\textbf{z} {\it in the model (\ref{eq:1}), while treating $\bm{X}$ and $\bm{\tilde{X}}$ as fixed. }
+
+The "modified FDR" in Theorem 1 is very close to the FDR where $q^{-1}$ is small compared with the number of selected features. However, we still want to control the FDR exactly. For this purpose, \cite{barber2015controlling} suggests a slightly more conservative procedure:
+
+{\sc Definition 2. }(Knockoff+). For any design matrix $\bm{X}\in\mathbb{R}^{n\times p}$ and response $\bm{y}\in \mathbb{R}^n$, 
+follow steps 1 to 4 in {\sc Definition 1}, but in step 3, compute the threshold $T$ with the target FDR $q$ via \ref{eq:9}
+\begin{align}\label{eq:9}
+T  = \min\left\{t\in\mathcal{W}: \frac{1+\#\{j, W_j\leq -t\}}{\#\{j, W_j\geq t\}\vee 1}\leq q \right\}
+\end{align}
+
+With this slight change, the knockoff+ procedure controls the FDR exactly by the following theorem.
+
+{\sc Theorem 2. } {\it For any $q\in[0,1]$, the knockoff+ method satisfies }
+\begin{align*}
+& \mathbb{E}\left[\frac{\#\{j:\beta_j=0,\text{ and }j\in \hat{S} \}}{\#\{j:j\in \hat{S} \}\vee 1} \right]\leq q
+\end{align*}
+
+\subsection{Extensions to $p<n<2p$}\label{sec:ext}
+When $n< 2p$, it's impossible to construct the knockoff variables $\tilde{\bm{X}}$ via equation (\ref{eq:4}), since there is no orthonormal matrix $\tilde{\bm{U}}$ to $\bm{X}$. However, as long as the noise level $\sigma$ is known or can be estimated accurately, knockoff filter can still be applied. The idea is to create "observations" to make up the number of observations to the level of $2p$. For doing this, assume for the last $2p-n$ observations, the feature variables are all $0$s. Then if we know the noise level $\sigma$ or we have an accurate estimate of it $\hat\sigma$, we can sample the response for the last $2p-n$ observations $\bm{y}'$ i.i.d. from $\mathcal{N}(0, \hat{\sigma}^2)$. Then approximately, 
+\begin{align*}
+& \begin{bmatrix}\bm{y} \\ \bm{y'}\end{bmatrix} \sim 
+\mathcal{N}\left(\begin{bmatrix}\bm{X} \\ \bm{0}\end{bmatrix}\bm{\beta}, \sigma^2 \bm{I} \right)
+\end{align*}
+
+By construction, we have a linear model for $p$ variables and $2p$ observations. Thus, we can apply the knockoff filter in \textbf{Section }(2.3) to this row-augmented data. Also, we need to emphasize that the knockoff features $\tilde{\bm{X}}$ is constructed based on the augmented design matrix $\begin{bmatrix}\bm{X} \\ \bm{0}\end{bmatrix}$, which does not depend on the sampled responses $\bm{y'}$.
+
+\section{Results}
+In this section, we provide both simulation and real data analysis result via knockoff filters. In summary, compared with correlated variable selection methods, knockoff filters not only successfully control the false discovery rates as we required, but also offer us high power, which is the proportion of true discoveries among all true features in simulation studies. Moreover, in the analysis of HIV drug resistance data, knockoff filter also gives us reasonable selections of mutations in Human Immunodeficiency Virus Type 1 in association with drug resistance.
+
+\subsection{Simulation Studies}
+Of course there are many other variable selection techniques that is aiming at controlling false discoveries. These methods, based on the ideas from Benjamini and Hochberg in \cite{benjamini1995controlling}, or perhaps based on ideas as constructing control groups, such as permuted designs to name a few, are also designed with the goal of keeping FDR under control. In simulation studies, we review some of these procedures, and compare them with our knockoff filter method.
+
+\subsubsection{Comparing to a permutation method}
+In this permutation method, we construct the control group of $\bm{X}$ differently from the procedure in the knockoff procedure. However, instead of constructing $\tilde{\bm{X}}$ as in section 2, we use the matrix $\bm{X}^\pi$, with entries given by:
+\begin{align*}
+& \bm{X}_{i,j}^\pi = \bm{X}_{\pi(i),j},
+\end{align*}
+for some randomly chosen permutation $\pi$ of the sample indices $\{1,2,\dots, n\}$. With this construction, the permuted matrix $\bm{X}^\pi$ will always satisfy $(\bm{X}^\pi)^T\bm{X}^\pi = \bm{X}^T\bm{X}$, so the permuted covariates have the same correlation structure with the original covariates. Moreover, 
+because we permute covariates matrix but the response variable $\bm{y}$ is unchanged, so the association between permuted covariates and the response $\bm{y}$ is broken. 
+
+\begin{figure}\label{Fig:1}
+	\centering\includegraphics[scale = 0.7]{Img/Permuted.pdf}
+	\caption{Results of the lasso path of the augmented covariates with settings in (\ref{eq:10}) }
+\end{figure}
+
+However, permutation method may fail other than the global null, which is $\beta_1=\dots=\beta_p=0$, as discussed by \cite{chung2013exact} and \cite{chung2013multivariate}. Specifically, in the linear regression setting (\ref{eq:1}), false discovery rate can be significantly underestimated because $\#\{j; W_j\leq -t\}$ in section 2 will not be a good estimates of false discoveries. 
+
+To see why this happens, suppose that the features $\bm{X}_j$ is centered and suppose that $\bm{X}$ displays nonvanishing correlations, then $\bm{X}^T\bm{X} = (\bm{X}^\pi)^T\bm{X}^\pi$ but $(\bm{X}^\pi)^T\bm{X} \approx 0$. Thus, the exchangeability result in section 2 ({\it Note, I should put theory parts into section 2}) will be violated, and thus the control of FDR will be poor.
+
+To show this in simulation studies, consider the design matrix $\bm{X}$ with 300 observations and 100 covariates. Each row of $\bm{X}$, denoted as $\bm{X}_i$, is generated i.i.d. from a $\mathcal{N}(\bm{0}, \bm{\Theta} )$ with $\Theta_{ii}=1$ and $\Theta_{ij} = 0.3$ for $i\neq j$. After center and normalize each column of $\bm{X}$ such that the mean of each column of $\bm{X}$ is 0, and the sum of squared of each column of $\bm{X}$ is 1. Then, we define the response variable $\bm{y}$ as follows:
+\begin{align}\label{eq:10}
+& \bm{y} = 3.5(\bm{X}_1+ \dots + \bm{X}_{30}) + \bm{z} \quad \text{ where }\bm{z} \sim\mathcal{N}(\bm{0}, \bm{I}_n)
+\end{align}
+
+Then after we fit the Lasso path via (\ref{model:6}) for the response $\bm{y}$ and the augmented design matrix $[\bm{X},\bm{X}^\pi]$. For one trial, \textbf{Figure }(\ref{Fig:1}) shows when each feature enters into the model. 
+
+Because in the original design matrix, null features and non-null features are positively correlated, the association between true features and response makes null features in the original design matrix also correlated with the response. Thus, we can see from the Figure (\ref{Fig:1}) that many null features entering the Lasso path at moderate $\lambda$. However, for the permuted features, since the correlation between these features and original non-null features is broken, they are not associated with the response, and thus the all of them do not enter the Lasso path until $\lambda$ is extremely small. This tells us that the permuted features, even those got from null features, have significantly different coefficient paths with its originals. Thus, the permuted features can not work as a good control group for the knockoff filters and will fail to control FDR. 
+
+To show this problems on FDR control, we repeat the setting in (\ref{eq:10}) for 1000 times, with both knockoff methods and permutation method. The empirical FDR, when the target FDR is set at $q=20\%$, is presented in the following table:
+\begin{table}[!htb]
+	\centering
+	\label{tbl:Permuted}
+	\begin{tabular}{l|c}
+		\hline
+		& \specialcell{{\bf FDR over 1000 trials }\\ {\bf (nominal level }$\bm{q=20\%}${\bf)} } \\ \hline
+		Knockoff	& 18.57\% \\
+		Permutation	& 48.54\% \\ \hline
+	\end{tabular}
+\end{table}
+
+As we can see it Table \ref{tbl:Permuted}, the knockoff filter successfully controls the FDR, but the permutation method yield a much higher FDR than the nominal value. 
+
+\subsubsection{Comparing to Benjamini-Hochberg procedure and variants}\label{sec:BHq}
+Benjamini-Hochberg (BHq) procedure, proposed by \cite{benjamini1995controlling}, is a well-built control of FDR in multiple testing problem. Specifically, consider testing $H_1, H_2,\dots, H_m$ based on the corresponding p-values $P_1,\dots, P_m$. Let $P_{(1)}\leq P_{(2)}\leq\dots\leq P_{(m)}$ be the order statistics of $P_1,\dots, P_m$, and denote $H_{(i)}$ as the null hypothesis corresponding to $P_{(i)}$. Then, let $k$ be the largest i for which $P_{(i)}\leq \frac{i}{m}q^\ast$, and we reject all $H_{(1)},\dots, H_{(k)}$. 
+
+Equivalently, instead of having P-values, if $Z_i \sim \mathcal{N}(0,1)$ when $H_i$ is true, and then if we reject $H_i$ when $|Z_i| \geq T$, then to control the FDR, do the same staff as above, then:
+\begin{align*}
+& k = \max\left\{k=1,\dots,m: P_{(i)}\leq \frac{i}{m}q^\ast \text{ for }i=1,\dots, k \right\}, \quad T = |Z_{(k)}|\\
+& \text{where }P_{(i)} = \mathbb{P}(|\mathcal{N}(0,1)|\geq |Z_{(n-i+1)}|), i=\#\{j: |Z_j| \geq  |Z_{(n-i+1)}|\} 
+\end{align*} 
+
+Thus:
+\begin{align}\label{Eq:thres_BHq}
+&T = \min\left\{t: \frac{m \mathbb{P}(|\mathcal{N}(0,1)|\geq t)}{\# \{j, |Z_j|\geq t \}}\leq q^\ast \right\}
+\end{align}
+
+Based on the theorem 1 in \cite{benjamini1995controlling}, FDR with Benjamini-Hochberg can be controlled by $\frac{m_0}{m}q^\ast$, where $m_0$ is the number of true null hypotheses when all hypotheses are independent.
+
+In linear regression settings in (\ref{eq:1}), BHq procedure may be applied by calculating the least-squares estimate,
+\begin{align*}
+& \hat{\bm{\beta}}^{\text{LS}} =(\bm{X}^T\bm{X})^{-1}\bm{X}^T\bm{y}
+\end{align*}
+
+By theory in least square regression, least square estimates follows normal distribution $\mathcal{N}(\bm{\beta},\sigma^2(\bm{X}^T\bm{X})^{-1} )$. Thus, when $\bm{X}$ are column independent, $(\bm{X}^T\bm{X})^{-1}$ is diagonal. Then, if we set $Z_j = \hat{\beta}_j^\text{LS}/\sigma\sqrt{(\bm{X}^T\bm{X})_{jj}^{-1}}$, they will have independent standard normal distribution and thus can be used in (\ref{Eq:thres_BHq}) with $m=p$ in regression case.
+
+The paper didn't discuss about the estimates of $\sigma$. In simulation and real data settings, we will always treat $\sigma$ unknown, and an unbiased estimates of $\hat{\sigma}^2 = \frac{1}{n-p}\cdot \text{RSS}$. Then, if we replace the $\sigma$ by $\hat{\sigma}$ in the expression of $Z_j$, it will have a $t_{n-p}$ distribution instead of standard normal. However, when $n, p$ are large enough such that $n-p\gg1$, $t_{n-p} \overset{d}{\rightarrow} \mathcal{N}(0,1)$. Thus, when there are enough observations in the simulation setup, this will not hurt the results significantly.
+
+It's important to notice that in theorem 1 in \cite{benjamini1995controlling}, we require all hypotheses are independent, which in linear regression settings it's equivalent to the design matrix $\bm{X}$ are column independent. Thus, when covariates are not independent to each other, the assumption of theorem 1 in \cite{benjamini1995controlling} will be violated, and thus the control of FDR with Benjamini-Hochberg will not be guaranteed. 
+
+To solve this problem, \cite{benjamini2001control} prove that the BHq procedure yields FDR can always be bounded by $\pi_0q\cdot S(p)$, where $\pi_0$ is the proportion of true null hypotheses and 
+\begin{align}\label{Eq:Corrected}
+& S(p) = \sum_{i=1}^p (1/i) \approx \log p + 0.577
+\end{align}. Thus, if we define the threshold $T$ by (\ref{Eq:thres_BHq}) but with $q^\ast/S(p)$ in replacement of $q^\ast$, the control of FDR can be achieved. 
+
+The problem of this method is that when we introduce $S(p)$ in control, this can make the objective control level extremely small when $p$ is large. Thus, the FDR can be controlled but the power to true discoveries will also be ruined.
+
+Another way for solving dependence issues is whiten the noise. To see how this works, we first re-emphasize that $\hat{\bm{\beta}}\sim \mathcal{N}(\bm{\beta}, \sigma^2(\bm{X}^T\bm{X})^{-1})$. Therefore, the dependence of $\hat{\beta}$ comes from the matrix $(\bm{X}^T\bm{X})^{-1}$. If we sample another random vector $\bm{Z}' \sim \mathcal{N}(0, \sigma^2(\bm{D} - (\bm{X}^T\bm{X})^{-1}))$, and let it be independent with $\hat{\beta}$, then by the additivity of normal distribution, we have:
+\begin{align}\label{Eq:whiten}
+& \hat{\bm{\beta}} + \bm{Z}_j' \sim \mathcal{N}(\bm{0}, \sigma^2 \bm{D})
+\end{align}
+
+Thus, if we let $\bm{D}$ to be a diagonal matrix, and also guarantee that $\bm{D} - (\bm{X}^T\bm{X})^{-1}$ is positive definite, then random variable $Z_j = (\hat{\beta} + \bm{Z}_j')/\sqrt{\bm{D}_{ii}}$ can work equivalently to the $Z_j$ in (\ref{Eq:thres_BHq}).
+
+Specifically, if we set $\bm{D} = \lambda_0^{-1} \bm{I} + \varepsilon\bm{I}$, where $\lambda_0 = \lambda_{\min} (\bm{X}^T\bm{X})$ be the minimum eigenvalue of matrix $\bm{X}^T\bm{X}$, then $\bm{D}$ is diagonal and $\bm{D} - (\bm{X}^T\bm{X})^{-1}$ will be positive definite. Thus, this method will work theoretically.
+
+However, for just one sample of $\bm{Z}_j'$, this uncertainty will ruin the actually distribution of $\hat{\bm{\beta}}$, and thus the power will be also very low.
+
+To compare all these methods together, we define the following simulations to compare seven different methods. They include knockoff filter with equi-correlated $\bm{s}$ (defined in (\ref{eq:2.1})), with SDP constructed $\bm{s}$ (defined in (\ref{eq:2.2})), the knockoff$+$ filter with equi-correlated $\bm{s}$ and SDP constructed $\bm{s}$, original Benjamini-Hochberg procedure (defined in (\ref{Eq:thres_BHq})), Benjamini-Hochberg with corrected bound by $S(p)$ (defined in (\ref{Eq:Corrected})), and Benjamini-Hochberg with whitened estimates (defined in (\ref{Eq:whiten})). 
+
+In the simulation, we still use the same model settings in (\ref{eq:1}). In detail, we use the problem size $n=3000$, $p=1000$, and the true support size $k=30$ in the model. We draw $\bm{X}\in\mathbb{R}^{n\times p}$ from i.i.d. $\mathcal{N}(0,1)$, and normalize its columns such that $\bm{X}_j^T\bm{X}_j=1$ for all $j=1,\dots, p$. To define $\bm{\beta}$, we choose $k=30$ coefficients at random and choose $\beta_j$ randomly from $\{\pm A\}$ for each selected features, where $A=3.5$ in the settings. Last, we draw $\bm{y} \sim \mathcal{N}(\bm{X\beta}, \bm{I})$.
+
+The reason why we set $A=3.5$ is because 3.5 is approximately the expected value of $\max_{1\leq j\leq p}|\bm{X}_j^T\bm{z}|$ where $\bm{z} \sim \mathcal{N}(\bm{0}, \bm{I})$ is the noise. Asymptotically, $\max_{1\leq j\leq p}|\bm{X}_j^T\bm{z}| \approx \sqrt{2\log{p}}$ when $p\rightarrow \infty$, for $\bm{X}_j$ are normalized. Thus, when $p=1000$, values on the right hand side is approximately 3.5. Setting the signal amplitude to be near this maximal noise level ensures that separating between signal and noise is possible, but not trivial.
+
+\begin{table}\label{tbl:BHq}
+	\caption{{\it FDR and power in the setting of section (\ref*{sec:BHq}) with $n=3000$ observations, $p=1000$ variables in the model with with regression coefficients of magnitude 3.5. Bold face font highlights those methods that are known theoretically to control FDR at nominal level $q=20\%$}}
+	\centering
+	\begin{tabular}{r|ccc}
+		\hline
+		\textbf{Method}	& \specialcell{\textbf{FDR(\%)} \\ \textbf{(nominal level $q=20\%$)}} & \textbf{Power($\%$)} & \specialcell{\textbf{Theoretical Guarantee} \\ \textbf{of FDR control?}} \\ \hline
+		\textbf{Knockoff$+$(equivariant)}	& \textbf{14.55} & \textbf{60.67} & \textbf{Yes} \\
+		Knockoff(equivariant)	& 17.79 & 66.35 & No \\
+		\textbf{Knockoff$+$(SDP)}	& \textbf{14.43} & \textbf{61.03} & \textbf{Yes} \\
+		Knockoff(SDP)	& 17.92 & 66.96 & No \\
+		Benjamini-Hochberg (BHq)	& 18.26 & 47.84 & No \\
+		\textbf{BHq correction}	& \textbf{2.44} & \textbf{18.01} & \textbf{Yes} \\
+		\textbf{BHq with whitened noise}	& \textbf{17.15} & \textbf{2.09} &\textbf{ Yes} \\\hline
+	\end{tabular}
+\end{table}
+
+We repeated the simulation with 600 trials, and the simulation results are listed in table (\ref{tbl:BHq}). To compare the result, we can see empirically, all 7 methods can control the FDR at nominal level $q=20\%$. To compare the power, the knockoff and knockoff$+$ filters can obtain power over $60\%$, which is significantly larger than the BHq procedure ($\approx 48\%$). 
+
+As we argued before, two corrections of BHq procedure will lose the power significantly. This is also proved in table (\ref{tbl:BHq}). With correction by $S(p) \approx 7.485$, the FDR $(\%)$ of BHq correction is about $1/S(p)$ of the BHq procedure, and therefore, the power is only about $18\%$, which is significantly lower than $48\%$ in BHq. For correction by (\ref{Eq:whiten}), the power is only about $2\%$, which means that this selection is even close to just perform random selections. 
+
+For comparison between knockoff with SDP construction and equi-correlated construction, we can see the SDP construction can obtain slightly higher power for both knockoff and knockoff$+$ procedure. Thus, we should focus our attention on three methods, knockoff with SDP construction, knockoff$+$ with SDP construction and BHq.
+
+\subsubsection{Effect of sparsity level, signal amplitude and feature correlation}\label{sec:effect}
+We are also interested in the effect of true models on different procedures for both FDR control and the power. For simulation study for this topic, we take the same setup as in Section \ref{sec:BHq}, but vary one of these three parameters of interest as follows:
+\begin{itemize}
+\item Effect of sparsity level $k$: we keep all other setting as the same in Section \ref{sec:BHq}, including $n=3000, p=1000, A=3.5$, and we test values $k=10,20,\dots, 200$.
+\item Effect of signal amplitude $A$: we keep all other setting as the same in Section \ref{sec:BHq}, including $n=3000, p=1000, k=30$, and we test values $A=2.8,2.9,\dots, 4.2$.
+\item Effect of feature correlation $\Theta$: we keep $n=3000, p=1000, A=3.5, k=30$. However, we generate the rows of $\bm{X} \sim \mathcal{N}(\bm{0}, \bm{\Theta}_\rho)$ with $(\bm{\Theta}_\rho)_{jk} = \rho^{|j-k|}$, for values $\rho = 0,0.1,\dots, 0.9$. Then we normalize the columns of $\bm{X}$ and generate $\bm{Y}$ as before. 
+\end{itemize}
+
+\begin{figure}\label{Fig:2}
+	\centering\includegraphics[scale = 0.7]{Img/sparsity.pdf}
+	\caption{{\it Test the effect of sparsity level. Here $n=3000, p=1000, A=3.5$, and the figures show mean FDR and mean power over 200 trials.}}
+\end{figure}  
+
+The mean FDR and mean power over 200 trials are displayed in Figures 2, 3 and 4. 
+
+
+\begin{figure}\label{Fig:3}
+	\centering\includegraphics[scale = 0.7]{Img/amplitude.pdf}
+	\caption{{\it Test the effect of signal amplitude. Here $n=3000, p=1000, k = 30$, and the figures show mean FDR and mean power over 200 trials.}}
+\end{figure} 
+
+\begin{figure}\label{Fig:4}
+	\centering\includegraphics[scale = 0.7]{Img/correlation.pdf}
+	\caption{{\it Test the effect of sparsity level. Here $n=3000, p=1000, A=3.5, k=30$, and the figures show mean FDR and mean power over 200 trials.}}
+\end{figure}  
+
+To examine the result, first we take a look at FDR control. All three methods successfully controlled FDR, except for $k=10$ in sparsity level for knockoff and BHq, $A=2.9$ in amplitude level for BHq and $\rho = 0.9$ in correlation test for knockoff. This is the same with {\sc Theorem 1} in by a correction of $q^{-1}$. When the sparsity level is low, or when the feature correlation is high, typically we select very few features (about 5), and when the number of selection is small, the difference between ((\ref{eq:8}) and (\ref{eq:9})) will be significant. For amplitude level for BHq is $2.9$, this is completely by random.
+
+Next, if we take a look at powers, we will find that power of knockoff filters, and knockoff$+$ filters are always outperform the BHq procedure. As expected, each method shows higher power when the sparsity level $k$ is large, the signal amplitude is high, and shows lower power when the correlation are strong. 
+
+In summary, knockoff and knockoff$+$ procedures have higher powers than BHq procedure, which means that they successfully getting more correct discoveries on average.
+
+\subsubsection{Relationship with the Benjamini-Hochberg procedure under orthogonal designs}
+As we argued in Section \ref{sec:BHq}, Benjamini-Hochberg procedure is known to control FDR by the level of $\pi_0q$ when $\bm{X}^T\bm{X}$ is diagonal. In this section, we make $\bm{X}$ orthogonal in order to understand the similarity and difference in how the knockoff filter and BHq methods works. The results are displayed in Figure (5) above.
+
+\begin{figure}\label{Fig:5}
+	\centering\includegraphics[scale = 0.7]{Img/compare_BHq.pdf}
+	\caption{{\it FDR and power of BHq and knockoff+ methods, average over 1000 trials. The nomial FDR level is set at $q=20\%$, and the design matrix $\bm{X}\in\mathbb{R}^{2000\times1000}$ is orthogonal, with sparsity level $k=200$ and thus $\pi_0=0.8(= (1000-200)/1000)$.}}
+\end{figure} 
+ 
+Thus, we can figure out that:
+\begin{itemize}
+\item BHq procedure can control FDR nearly identical at level $\pi_0 q= 16\%$.
+\item In contrast, when the signal magnitude is large enough, knockoff$+$ method will reach the FDR at nominal level $q=20\%$, which means that it can correct the proportion of true null features. When signal magnitude is small, however, the empirical FDR of knockoff$+$ procedure will be lower than the BHq's $\pi_0q$. In general, the power are almost the same for both methods.
+\end{itemize}
+
+\subsection{Experiment on real data: HIV drug resistance.}
+We apply the knockoff filter to the task of detecting mutations in the Human Immunodeficiency Virus Type 1 (HIV-1) that are associated with drug resistance. The data set, described and analyzed in \cite{rhee2006genotypic}, consists of drug resistance measurement, which is measured as fold change in susceptibility
+defined as the ratio of the IC$_{50}$ of an isolate and a standard wild-type
+control isolate, and genotype information from samples of HIV-1. They are separated into three data sets by drup types, including for resistance to protease inhibitors (PIs), to nucleoside reverse transcriptase (RT) inhibitors (NRTIs) and to nonnucleoside RI inhibitors (NNRTIs). The data set sizes are as follows:
+\begin{table}[!htb]
+	\centering
+	\begin{tabular}{l|cccc}
+		\hline
+			&  &  & \textbf{\# protease or RT} & \textbf{\# mutations appearing} \\
+		\textbf{Drug type}	& \textbf{\# drugs} & \textbf{Sample size} & \textbf{positions genotyped} & \textbf{$\bm{\geq 3}$ times in sample} \\
+		 \hline
+		PI & 7 & 846 & 99 & 209\\ 
+		NRTI & 6 & 634 & 240 & 287\\
+		NNRTI & 3 & 745 & 240 & 319\\\hline
+	\end{tabular}
+\end{table}
+
+In each drug class, some samples are missing resistance measurements for some of drugs, so for each drug's analysis, the sample size and number of mutations are different, and they are reported in the figures Figure 6, 7 and 8 on a case-by-case basis.
+
+We analyze each drug separately. For each drug, the responses $y_i$ is the log of the fold increase in susceptibility of lab-tested drug resistance in $i$th sample. For design matrix $\bm{X}$, all entries $\bm{X}_{ij} \in \{0,1\}$, indicating presence of mutation \# $j$ in the $i$th sample. We treat different types of mutations at same position as different mutations, and it's possible for a single sample having multiple types of mutation together at one single position, such as ST at P20 means there exists type S mutation and type T mutation together at position 20. For each drug, we keep only those mutations appearing $\geq 3$ times in the sample of that drug, and remove duplicated columns of $\bm{X}$ for guarantee the identifiability. Then we apply knockoff and BHq with nominal FDR at $q=20\%$. For drug TDF in NRTI drug class, the sample size $n$ satisfies that $p < n<2p$, in which we should make use the technique in Section \ref{sec:ext} by augmenting data and run knockoff filters.
+
+Since this is a real data experiment, the ground truth is unknown. To evaluate our results, we compare the selected mutations with existing treatment-selected mutation (TSM) panels. For each drug class (PIs, NRTIs, NNRTIs), \cite{rhee2005hiv} create panels of mutations that are present at significantly higher frequency in virus samples from individuals who have been treated with that class of drug. These tables give us a good reference and we aim at replicability, that is we will evaluate our model selection results by comparing them with TSM list. We count different type of mutation at the same position only once since, because different mutations at the same position often have related functional effects (e.g. they 
+
+\begin{figure}[!htb]\label{Fig:6}
+	\centering\includegraphics[scale = 0.4]{Img/PI.pdf}
+	\caption{{\it Results of applying the knockoff filter and BHq with $q=20\%$ to model PI-type drug resistance of HIV-1, based on genetic mutations using data from \cite{rhee2006genotypic}. For each PI-type treatment and for each of the two methods, the bar plots show the number of positions where mutations were selected. We count different type of mutation at the same position only once since, because different mutations at the same position often have related functional effects (e.g. they disrupt the same process). To validate our result, we compare our selection with protease positions that appear in the treatment-selected mutation (TSM) panel for the PI class of treatments, given in table 1 of \cite{rhee2005hiv}. Blue bars indicate those selection in the table, and red bars indicate those not in the table. The horizontal line indicates the total number of HIV-protease positions appearing in TSM list.}}
+\end{figure} 
+disrupt the same process).
+
+Results for three drug classes are displayed in Figure 6, 7, 8, respectively. We can see from these results that for PI data, all seven drugs perform similarly by selecting a more than half of positions in TSM panel, with moderate selections not in the list. For NRTI drug, knockoff method performs poorly for drug X3TC and DDI, but for rest drugs they selecting at least half positions with small false discoveries. Lastly, for NNRTI data, knockoff method selects most positions in TSM list, but with a bit more selections outside the list.
+
+Also, in general, knockoff method out-performs BHq method, by selecting slightly more positions in TSM list than BHq, and also by selecting less positions not in TSM list. Since we just use one drug in each selecting procedure, but for TSM list construction they use them together, knockoff and BHq procedures indeed select variables that mostly correspond to real (replicable) effects, as verified by the independently created TSM lists.
+
+\begin{figure}\label{Fig:7}
+	\centering\includegraphics[scale = 0.4]{Img/NRTI.pdf}
+	\caption{{\it Same with Figure 6, but with NRTI-type drugs. Validating results against the treatment-selected mutation (TSM) panel for NRTIs given in table 2 of \cite{rhee2005hiv}.}}
+\end{figure} 
+
+
+\begin{figure}\label{Fig:8}
+	\centering\includegraphics[scale = 0.4]{Img/NNRTI.pdf}
+	\caption{{\it Same with Figure 6, but with NNRTI-type drugs. Validating results against the treatment-selected mutation (TSM) panel for NNRTIs given in table 2 of \cite{rhee2005hiv}.}}
+\end{figure} 
+
+\subsubsection{Simulation under non-Gaussian noise with a sparse real design matrix}
+To verify knockoff method is robust to non-Gaussian noise, we test the method (and compared to BHq) using partially simulated data based on NNRTI dataset. We take the design matrix $\bm{X} \in \mathbb{R}^{747\times 319}$ from the NNRTI drug data set discussed before. Then we generate a coefficient vector $\beta\in\mathbb{R}^{319}$ by randomly choosing a support S of size $k=20$ and drawing $\beta_j\sim\mathcal{N}(0,1) \cdot 3.5$ for each $j\in S$.
+
+For noise setup, we first get the empirical distribution of $\mathcal{P}_{\bm{X}}^{\perp}(\bm{y}^{(l)})$, where $\bm{y}^{(l)}$ is the response for the $l$th NNRTI-type drug for $l=1,2,3$ (discarding rows of $\bm{X}$ if entries of $\bm{y}^{(l)}$ is missing). This empirical distribution can be computed through running linear regressions and taking the residuals. Then, the noise of simulation is sampled from this empirical distribution (or residuals) with replacement, by scaling it to ensure that $\mathbb{E}[z_i^2]=1$. The following table show the FDR control and power of knockoff, knockoff$+$ and BHq procedures.
+
+\begin{table}[!htb]
+	\centering
+	\label{tbl:nonGaus}
+	\begin{tabular}{lcc}
+		\hline
+		& {\bf FDR over 1000 trials } & \textbf{Power over 1000 trials} \\
+		& \textbf{(nominal level q)$\bm{=20\%}$} & \\ \hline
+		Knockoff	& 19.62\% & 68.10\% \\
+		Knockoff$+$	& 14.30\% & 62.80\% \\
+		BHq	& 24.66\%  & 69.45\% \\ \hline
+	\end{tabular}
+\end{table}
+
+We know that this is an extremely challenging scenario for the knockoff procedure to maintain FDR control. First the noise $\bm{z}$ is heavy tailed with excess kurtosis equal to $9.277$. Also because $\bm{X}_j$ is sparse, central limit theorem for $\bm{X}_j^T\bm{z}$ will not be asymptotically normal because of the sparsity of $\bm{X}$. However, we see successful FDR control in the simulation for both Knockoff, Knockoff$+$ and BHq procedures. 
+\section{Discussion}
+
+\bibliography{stat572}
+
+\end{document}
+
+
+
+
+
+
+
+
+
